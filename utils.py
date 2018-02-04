@@ -93,11 +93,12 @@ def draw_boxes(image, boxes, labels):
         cv2.rectangle(image, (xmin,ymin), (xmax,ymax), (0,255,0), 3)
         cv2.putText(image, 
                     labels[box.get_label()] + ' ' + str(box.get_score()), 
-                    (xmin, ymin - 13), 
+                    (xmin+(xmax-xmin)//2, ymin+(ymax-ymin)//2 - 13),
                     cv2.FONT_HERSHEY_SIMPLEX, 
                     1e-3 * image.shape[0], 
                     (0,255,0), 2)
-        
+        label = labels[box.get_label()]
+        print ("Found: {}, score: {}".format(label, box.get_score()))
     return image        
         
 def decode_netout(netout, obj_threshold, nms_threshold, anchors, nb_class):

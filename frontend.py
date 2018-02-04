@@ -55,11 +55,19 @@ class YOLO(object):
         else:
             raise Exception('Architecture not supported! Only support Full Yolo, Tiny Yolo, MobileNet, SqueezeNet, VGG16, ResNet50, and Inception3 at the moment!')
 
-        print self.feature_extractor.get_output_shape()    
+        # extract features by using backend net (trained on imageNet?) to generate data "features"
+        # Keras uses Tensorflow under the hood, and Tensorflow runs the Tensor operations entirely within the GPU (if it can)
+        # The init code is connecting all the pieces together so that they can be unleashed to the GPU at a later time
+        print (self.feature_extractor.get_output_shape())
         self.grid_h, self.grid_w = self.feature_extractor.get_output_shape()        
         features = self.feature_extractor.extract(input_image)            
 
         # make the object detection layer
+        # output = Conv2D(features)
+        # output = Reshape(output) S x S x B x (boundingBox + C). This seems to be different from Yolo paper which
+        # we have S x S x (B * boundingBox + C). The shape shown above results in a bounding box for each class.
+        # However in the case of a single class it ends up being the same end result
+        # output = Lambda(output) (custom layer)
         output = Conv2D(self.nb_box * (4 + 1 + self.nb_class), 
                         (1,1), strides=(1,1), 
                         padding='same', 
@@ -320,13 +328,13 @@ class YOLO(object):
         for c in range(self.nb_class):
             sorted_indices = list(reversed(np.argsort([box.classes[c] for box in boxes])))
 
-            for i in xrange(len(sorted_indices)):
+            for i in range(len(sorted_indices)):
                 index_i = sorted_indices[i]
                 
                 if boxes[index_i].classes[c] == 0: 
                     continue
                 else:
-                    for j in xrange(i+1, len(sorted_indices)):
+                    for j in range(i+1, len(sorted_indices)):
                         index_j = sorted_indices[j]
                         
                         if self.bbox_iou(boxes[index_i], boxes[index_j]) >= nms_threshold:
